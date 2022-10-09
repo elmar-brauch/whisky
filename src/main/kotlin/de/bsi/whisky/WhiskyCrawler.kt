@@ -62,18 +62,19 @@ class WhiskyCrawler {
         return WhiskyData(e.key, sum.first, sum.second)
     }
 
-    private fun readWishCollectionPair(url: String): Pair<Int, Int> {
+    private val digitRegex = "\\d+".toRegex()
+    private val noDigitRegex = "\\D".toRegex()
+
+    private fun readWishCollectionPair(url: String) = try {
         browser[url]
-        try {
-            val wish = browser.findElement(By.xpath("(//div[@id='whisky-community']//button)[1]"))
-            val coll = browser.findElement(By.xpath("(//div[@id='whisky-community']//button)[3]"))
-            val wishCount = wish?.text?.replace(Regex("\\D"), "")?.toInt()
-            val collCount = coll?.text?.replace(Regex("\\D"), "")?.toInt()
-            return Pair(wishCount ?: 0, collCount ?: 0)
-        } catch (e: Exception) {
-            log.debug("Ignoring corrupted data in " + browser.currentUrl)
-        }
-        return Pair(0, 0)
+        val wish = browser.findElement(By.xpath("(//div[@id='whisky-community']//button)[1]")).text
+        val coll = browser.findElement(By.xpath("(//div[@id='whisky-community']//button)[3]")).text
+        val wishCount = if (wish.contains(digitRegex)) wish.replace(noDigitRegex, "").toInt() else 1
+        val collCount = if (coll.contains(digitRegex)) coll.replace(noDigitRegex, "").toInt() else 1
+        Pair(wishCount, collCount)
+    } catch (e: Exception) {
+        log.debug("Ignoring corrupted data in " + browser.currentUrl)
+        Pair(0, 0)
     }
 
 }
